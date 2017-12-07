@@ -1,0 +1,96 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
+using Windows.Foundation;
+using Windows.Foundation.Collections;
+using Windows.UI.Xaml;
+using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Controls.Primitives;
+using Windows.UI.Xaml.Data;
+using Windows.UI.Xaml.Input;
+using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Navigation;
+using Windows.Devices.Gpio;
+using System.Threading.Tasks;
+
+// The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
+
+namespace stoplicht
+{
+    /// <summary>
+    /// An empty page that can be used on its own or navigated to within a Frame.
+    /// </summary>
+    public sealed partial class MainPage : Page
+    {
+        private const int RpiPin5 = 5;
+        private const int RpiPin6 = 6;
+        private const int RpiPin13 = 13;
+        private const int RpiPin19 = 19;
+        private GpioPin _gpioPinGroen;
+        private GpioPin _gpioPinOranje;
+        private GpioPin _gpioPinRood;
+        private GpioController _gpio;
+        private GpioPin _knop;
+        bool LichtAan = true;
+
+        public MainPage()
+        {
+            
+
+            this.InitializeComponent();
+
+            Init();
+
+            
+            run();
+            
+        }
+
+        private void Init()
+        {
+            _gpio = GpioController.GetDefault();
+            //Groene lampje
+            _gpioPinGroen = _gpio.OpenPin(RpiPin13);
+            _gpioPinGroen.SetDriveMode(GpioPinDriveMode.Output);
+            _gpioPinGroen.Write(GpioPinValue.High);
+            //Oranje lampje
+            _gpioPinOranje = _gpio.OpenPin(RpiPin6);
+            _gpioPinOranje.SetDriveMode(GpioPinDriveMode.Output);
+            _gpioPinOranje.Write(GpioPinValue.High);
+            //Rood lampje
+            _gpioPinRood = _gpio.OpenPin(RpiPin5);
+            _gpioPinRood.SetDriveMode(GpioPinDriveMode.Output);
+            _gpioPinRood.Write(GpioPinValue.High);
+            //Knop
+            _knop = _gpio.OpenPin(RpiPin19);
+            _knop.SetDriveMode(GpioPinDriveMode.InputPullUp);
+            _knop.ValueChanged += _knop_ValueChanged;
+        
+        }
+
+        private void _knop_ValueChanged(GpioPin sender, GpioPinValueChangedEventArgs args)
+        {
+            if(args.Edge== GpioPinEdge.FallingEdge)
+            {
+                _gpioPinRood.Write(GpioPinValue.High);
+                _gpioPinGroen.Write(GpioPinValue.Low);
+                Task.Delay(10000).Wait();
+                _gpioPinGroen.Write(GpioPinValue.High);
+                _gpioPinOranje.Write(GpioPinValue.Low);
+                Task.Delay(3000).Wait();
+                _gpioPinOranje.Write(GpioPinValue.High);
+                run();
+            
+            }
+        }
+
+        private void run()
+        {
+            _gpioPinRood.Write(GpioPinValue.Low);
+        }
+        //© Copyright Damian-is-LIT BV
+
+    }
+}
